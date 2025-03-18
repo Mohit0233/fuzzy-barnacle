@@ -1,0 +1,55 @@
+name: Go Test Runner
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    name: Run Go Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.21 # Update as needed
+
+      - name: Run Tests & Capture Output
+        id: go-test
+        run: |
+          mkdir -p test-results
+          go test -v ./... | tee test-results/test_output.txt
+
+      - name: Parse Test Results & Generate Summary
+        run: |
+          PASSED=$(grep -E "=== RUN|--- PASS" test-results/test_output.txt | awk '{print $3}')
+          FAILED=$(grep -E "--- FAIL" test-results/test_output.txt | awk '{print $3}')
+
+          echo "# 🧪 Go Test Summary" > $GITHUB_STEP_SUMMARY
+          
+          if [ -n "$PASSED" ]; then
+            echo "✅ **Passed Tests:**" >> $GITHUB_STEP_SUMMARY
+            echo "$PASSED" | awk '{print "- "$0}' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No tests passed." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ -n "$FAILED" ]; then
+            echo -e "\n❌ **Failed Tests:**" >> $GITHUB_STEP_SUMMARY
+            echo "$FAILED" | awk '{print "- "$0}' >> $GITHUB_STEP_SUMMARY
+            exit 1 # Fail workflow if any test fails
+          else
+            echo "🎉 All tests passed!" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Test Output (Optional)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-test-results
+          path: test-results/test_output.txt

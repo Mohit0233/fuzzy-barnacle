@@ -1,4 +1,4 @@
-name: Go Test Runner
+name: Go Test Runner (Per Test)
 
 on:
   push:
@@ -7,9 +7,10 @@ on:
   pull_request:
 
 jobs:
-  test:
-    name: Run Go Tests
+  discover-tests:
     runs-on: ubuntu-latest
+    outputs:
+      test-names: ${{ steps.get-tests.outputs.tests }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -17,39 +18,34 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.21 # Update as needed
+          go-version: 1.21
 
-      - name: Run Tests & Capture Output
-        id: go-test
+      - name: Generate go.sum (if missing)
+        run: go mod tidy
+
+      - name: Discover Tests
+        id: get-tests
         run: |
-          mkdir -p test-results
-          go test -v ./... | tee test-results/test_output.txt
+          TESTS=$(go test ./... -list . | grep '^Test' | jq -R -s -c 'split("\n")[:-1]')
+          echo "tests=$TESTS" >> $GITHUB_ENV
+          echo "tests=$TESTS" >> $GITHUB_OUTPUT
 
-      - name: Parse Test Results & Generate Summary
-        run: |
-          PASSED=$(grep -E "=== RUN|--- PASS" test-results/test_output.txt | awk '{print $3}')
-          FAILED=$(grep -E "--- FAIL" test-results/test_output.txt | awk '{print $3}')
+  run-tests:
+    needs: discover-tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test-name: ${{ fromJson(needs.discover-tests.outputs.test-names) }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-          echo "# 🧪 Go Test Summary" > $GITHUB_STEP_SUMMARY
-          
-          if [ -n "$PASSED" ]; then
-            echo "✅ **Passed Tests:**" >> $GITHUB_STEP_SUMMARY
-            echo "$PASSED" | awk '{print "- "$0}' >> $GITHUB_STEP_SUMMARY
-          else
-            echo "✅ No tests passed." >> $GITHUB_STEP_SUMMARY
-          fi
-
-          if [ -n "$FAILED" ]; then
-            echo -e "\n❌ **Failed Tests:**" >> $GITHUB_STEP_SUMMARY
-            echo "$FAILED" | awk '{print "- "$0}' >> $GITHUB_STEP_SUMMARY
-            exit 1 # Fail workflow if any test fails
-          else
-            echo "🎉 All tests passed!" >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - name: Upload Test Output (Optional)
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          name: go-test-results
-          path: test-results/test_output.txt
+          go-version: 1.21
+
+      - name: Run Specific Test
+        run: go test -v -run ${{ matrix.test-name }} ./...
+

@@ -98,8 +98,11 @@ jobs:
             -var="github_repo=${{ github.repository }}"
           echo "instance_ids=$(terraform output -raw instance_ids)" >> $GITHUB_ENV
           echo "public_ips=$(terraform output -raw public_ips)" >> $GITHUB_ENV
-          echo "runner_names=$(terraform output -json runner_names)" >> $GITHUB_ENV
+          echo "runner_names=$(terraform output -raw runner_names)" >> $GITHUB_ENV
 
+      - name: Print Runner Names
+        run: |
+          echo "Runner Names: $runner_names"
   run-on-aws:
     needs: setup-runner
     runs-on: ${{ matrix.runner_label }}  # Dynamically assign runner labels

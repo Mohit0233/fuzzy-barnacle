@@ -24,7 +24,6 @@ locals {
 
 output "runner_token_status" {
   value = local.is_runner_token_present ? "Token is set" : "Token is missing or empty"
-  sensitive = true
 }
 
 resource "aws_instance" "github_runners" {

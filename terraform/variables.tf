@@ -11,6 +11,7 @@ variable "instance_types" {
 variable "runner_token" {
   description = "GitHub token for registering self-hosted runner"
   type        = string
+  sensitive = "true"
 }
 
 variable "github_repo" {

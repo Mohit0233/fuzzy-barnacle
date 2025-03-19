@@ -77,6 +77,14 @@ jobs:
             }
           }' > ~/.terraform.d/credentials.tfrc.json
 
+      - name: Check if GITHUB_TOKEN is set
+        run: |
+          if [[ -z "${{ secrets.GITHUB_TOKEN }}" ]]; then
+            echo "GITHUB_TOKEN is missing!"
+            exit 1
+          else
+            echo "GITHUB_TOKEN is set."
+          fi
 
       - name: Deploy EC2 using Terraform Cloud
         id: terraform-outputs
@@ -166,9 +174,9 @@ jobs:
   cleanup-runner:
     needs: run-on-aws
     runs-on: aws-runner-t4g.large
+    if: always()  # Ensures this runs even if previous jobs fail
     steps:
-
-     # adding this again in case we get logged out because tests took too long
+      # Re-authenticate with Terraform Cloud in case session expired
       - name: Authenticate with Terraform Cloud
         env:
           TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}

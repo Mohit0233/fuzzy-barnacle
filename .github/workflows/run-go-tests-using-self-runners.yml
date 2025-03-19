@@ -239,7 +239,8 @@ jobs:
           if [ "${{ env.exit_code }}" -ne 0 ]; then
             RESULT="failure"
           fi
-          echo "${{ matrix.test-name }},${RESULT}" >> $GITHUB_WORKSPACE/test-results.csv
+          echo "${{ matrix.test-name }},${RESULT}" >> $GITHUB_WORKSPACE/test-results-${{ matrix.test-name }}.csv
+    
 
       - name: Upload Test Results
         if: always()

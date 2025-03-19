@@ -1,10 +1,14 @@
 name: Go Test with Ephemeral Runner
 
+#on:
+#  push:
+#    branches:
+#      - main
+#  pull_request:
+
+
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read

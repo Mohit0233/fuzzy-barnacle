@@ -1,19 +1,24 @@
 name: Test Runner  # Workflow name
 
+#
+#on:
+#  workflow_dispatch:
 
 on:
-  workflow_dispatch: 
-
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
   my-job:
-    runs-on: aws-runner-t4g.medium  
+    runs-on: aws-runner-t4g.large
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4  
 
       - name: Check Runner
-        run: echo "Running on aws-runner-t4g.medium"
+        run: echo "Running on aws-runner-t4g.large"
 
       - name: Sleep for 30 seconds
         run: sleep 30

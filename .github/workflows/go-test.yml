@@ -89,12 +89,18 @@ jobs:
           #            -var="runner_token=${{ secrets.RUNNER_CREATOR_GITHUB_TOKEN }}" \
           #            -var="github_repo=${{ github.repository }}"
           
-          echo "runner_names=$(terraform output -json runner_names | jq -r 'join(",")')" >> "$GITHUB_ENV"
-          echo "runner_names=$(terraform output -json runner_names | jq -r 'join(",")')" >> "$GITHUB_OUTPUT"
+#          echo "runner_names=$(terraform output -json runner_names | jq -r 'join(",")')" >> "$GITHUB_ENV"
+#          echo "runner_names=$(terraform output -json runner_names | jq -r 'join(",")')" >> "$GITHUB_OUTPUT"
+#
+#          # Log it separately
+#          RUNNER_NAMES="$(terraform output -json runner_names | jq -r 'join(",")')"
+#          echo "Runner Names: $RUNNER_NAMES"
 
-          # Log it separately
-          RUNNER_NAMES="$(terraform output -json runner_names | jq -r 'join(",")')"
-          echo "Runner Names: $RUNNER_NAMES"
+           RUNNER_NAMES_JSON="$(terraform output -json runner_names | jq -c)"
+           echo "runner_names=$RUNNER_NAMES_JSON" >> "$GITHUB_ENV"
+           echo "runner_names=$RUNNER_NAMES_JSON" >> "$GITHUB_OUTPUT"
+
+           echo "Runner Names JSON: $RUNNER_NAMES_JSON"
 
 
       - name: Debug Runner Names

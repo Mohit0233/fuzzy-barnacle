@@ -25,6 +25,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Debug TEST_SECRET
+        run: |
+          echo "Encoded TEST_SECRET: $(echo -n '${{ secrets.TEST_SECRET }}' | base64)"
+    
+
       - name: Configure AWS Credentials from Secrets
         uses: aws-actions/configure-aws-credentials@v2
         with:

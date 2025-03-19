@@ -24,22 +24,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set AWS Credentials Manually
-        run: |
-          export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-          export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} aws ec2    describe-regions --query "Regions[*].RegionName" --region ap-south-1 
-
-      - name: Debug AWS Credentials
-        run: |
-          echo "AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:0:4}********${AWS_ACCESS_KEY_ID: -4}"  # Show first 4 and last 4 characters
-          echo "AWS_SECRET_ACCESS_KEY: ********"  # Fully masked
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-
-
+t
 
       - name: Configure AWS Credentials from Secrets
         uses: aws-actions/configure-aws-credentials@v2

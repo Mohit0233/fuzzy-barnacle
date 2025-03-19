@@ -46,6 +46,10 @@ jobs:
 #          echo "instance_ids=$(terraform output -raw instance_ids)" >> $GITHUB_ENV
 #          echo "public_ips=$(terraform output -raw public_ips)" >> $GITHUB_ENV
 
+
+      - name: Install Dependencies (unzip)
+        run: sudo apt-get update && sudo apt-get install -y unzip
+
       - name: Install Terraform CLI
         uses: hashicorp/setup-terraform@v2
         with:
@@ -88,9 +92,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
       - name: Run main.go
         run: |

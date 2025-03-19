@@ -238,9 +238,9 @@ jobs:
         run: |
           cd terraform
           terraform destroy -auto-approve
-#               \
-#            -var="aws_region=${{ env.AWS_REGION }}" \
-#            -var="instance_types=${{ env.INSTANCE_TYPES }}" \
-#            -var="runner_token=${{ secrets.RUNNER_CREATOR_GITHUB_TOKEN }}" \
-#            -var="github_repo=${{ github.repository }}"
+          #               \
+          #            -var="aws_region=${{ env.AWS_REGION }}" \
+          #            -var="instance_types=${{ env.INSTANCE_TYPES }}" \
+          #            -var="runner_token=${{ secrets.RUNNER_CREATOR_GITHUB_TOKEN }}" \
+          #            -var="github_repo=${{ github.repository }}"
           echo "All runners terminated."

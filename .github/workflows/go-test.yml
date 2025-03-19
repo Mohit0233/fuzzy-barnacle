@@ -90,7 +90,7 @@ jobs:
           #            -var="runner_token=${{ secrets.RUNNER_CREATOR_GITHUB_TOKEN }}" \
           #            -var="github_repo=${{ github.repository }}"
           
-          echo "runner_names=$(terraform output runner_names)" >> "$GITHUB_ENV"
+          echo "runner_names=$(terraform output -json runner_names | jq -r 'join(",")')" >> "$GITHUB_ENV"
 
 
       - name: Print Runner Names

@@ -1,14 +1,14 @@
 
-terraform {
-  cloud {
-
-    organization = "test-terafrom-cloud"
-
-    workspaces {
-      name = "github-self-runner-pipeline-flow"
-    }
-  }
-}
+# terraform {
+#   cloud {
+#
+#     organization = "test-terafrom-cloud"
+#
+#     workspaces {
+#       name = "github-self-runner-pipeline-flow"
+#     }
+#   }
+# }
 #
 # provider "aws" {
 #   region = var.aws_region

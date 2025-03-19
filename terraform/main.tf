@@ -18,14 +18,6 @@ locals {
   instance_type_list = tolist(var.instance_types)  # Ensure it's a list
 }
 
-locals {
-  is_runner_token_present = length(var.runner_token) > 0
-}
-
-output "runner_token_status" {
-  value = local.is_runner_token_present ? "Token is set" : "Token is missing or empty"
-}
-
 resource "aws_instance" "github_runners" {
   count = length(local.instance_type_list)
 

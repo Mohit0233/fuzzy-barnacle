@@ -19,6 +19,8 @@ execute_command() {
 execute_command sudo apt update -y
 execute_command sudo apt install -y curl tar jq git
 
+echo -e "RUNNER_CFG_PAT=${RUNNER_CFG_PAT:0:4}****${RUNNER_CFG_PAT: -4}\n" >> "$LOG_FILE"
+
 # Set environment variable for GitHub Runner authentication
 export RUNNER_CFG_PAT="${RUNNER_TOKEN}"
 

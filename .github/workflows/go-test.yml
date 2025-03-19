@@ -179,12 +179,24 @@ jobs:
     runs-on: aws-runner-t4g.large
     if: always()  # Ensures this runs even if previous jobs fail
     steps:
-      # Re-authenticate with Terraform Cloud in case session expired
-      - name: Authenticate with Terraform Cloud
+
+      - name: Install Terraform CLI
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.11.2
+
+      - name: Configure Terraform Cloud Credentials
         env:
           TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
         run: |
-          terraform login
+          mkdir -p ~/.terraform.d
+          echo '{
+          "credentials": {
+           "app.terraform.io": {
+             "token": "'"$TF_API_TOKEN"'"
+           }
+          }
+          }' > ~/.terraform.d/credentials.tfrc.json
 
       - name: Deregister and Terminate AWS Runners
         run: |

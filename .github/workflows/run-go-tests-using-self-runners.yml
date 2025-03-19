@@ -1,4 +1,4 @@
-name: Go Test with Ephemeral Runner
+name: Go Test with Self Hosted Runner
 
 on:
   push:
@@ -16,7 +16,7 @@ env:
   INSTANCE_TYPES: '[\"t4g.small\", \"t4g.medium\"]'
 
 jobs:
-  setup-runner:
+  create-runners:
     runs-on: aws-runner-t4g.large
     outputs:
       runner_names: ${{ steps.terraform-outputs.outputs.runner_names }}
@@ -110,36 +110,24 @@ jobs:
         run: |
           echo "Runner Names (GITHUB_ENV): ${{ env.runner_names }}"
           echo "Runner Names (GITHUB_OUTPUT): ${{ steps.terraform-outputs.outputs.runner_names }}"
-#
-#  testing:
-#    needs: setup-runner
-#    runs-on: aws-runner-t4g.large
+          
 
-
-#  run-on-aws:
-#    needs: setup-runner
-#    runs-on: ${{ matrix.runner_label }}  # Dynamically assign runner labels
-#    strategy:
-#      fail-fast: false
-#      matrix:
-##        runner_label: ${{ fromJson(needs.setup-runner.outputs.runner_names) }}  # Use Terraform output to set runner labels
-#         runner_label: [aws-runner-t4g.large, aws-runner-t4g.large]
-#
-#    steps:
-#      - name: Check runner logging
-#        run: |
-#          echo "Hello from ephemeral AWS runner!"
-#          uname -a
-#          lscpu
-#
-#      - name: Install Go using setup-go
-#        uses: actions/setup-go@v5
-#        with:
-#          go-version: '1.21'
-#
-#      - name: Run main.go
-#        run: |
-#          go run main.go
+  setup-runners:
+    name: Setup Runner - ${{ matrix.runner }}
+    needs: create-runners
+    runs-on: aws-runner-t4g.large
+    strategy:
+      matrix:
+        runner: ${{ fromJson(needs.create-runners.outputs.runner_names) }}
+    outputs:
+      runner_ready: ${{ matrix.runner }}
+    steps:
+      - name: Setup ${{ matrix.runner }}
+        run: |
+          echo "Setting up ${{ matrix.runner }}"
+          # wget scripts and run them here
+          # sleep 5  # Simulating setup time
+          echo "Setup complete for ${{ matrix.runner }}"
 
   discover-tests:
     runs-on: aws-runner-t4g.large
@@ -201,13 +189,13 @@ jobs:
           echo '${{ steps.get-tests.outputs.tests }}' | jq -r '.[]' | sed 's/^/- /'
 
   run-tests:
-    needs: [setup-runner, discover-tests]
+    needs: [setup-runners, discover-tests]
     name: ${{ matrix.test-name }}
     runs-on: ${{ matrix.runner_label }}  # Dynamically assign runner labels
     strategy:
       fail-fast: false
       matrix:
-#        runner_label: ${{ fromJson(needs.setup-runner.outputs.runner_names) }}  # Use Terraform output to set runner labels
+#        runner_label: ${{ fromJson(needs.setup-runners.outputs.runner_ready) }}
         runner_label: [aws-runner-t4g.large, aws-runner-t4g.large]
         test-name: ${{ fromJson(needs.discover-tests.outputs.test-names) }}
     steps:
@@ -246,7 +234,6 @@ jobs:
     runs-on: aws-runner-t4g.large
     if: always()  # Ensures this runs even if previous jobs fail
     steps:
-
       - name: Install Terraform CLI
         uses: hashicorp/setup-terraform@v2
         with:

@@ -56,6 +56,7 @@ jobs:
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.11.2
+          terraform_wrapper: false
 
 #      - name: Authenticate with Terraform Cloud
 #        env:
@@ -193,6 +194,7 @@ jobs:
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.11.2
+          terraform_wrapper: false
 
       - name: Configure Terraform Cloud Credentials
         env:

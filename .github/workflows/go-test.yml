@@ -173,7 +173,9 @@ jobs:
           go-version: 1.24
 
       - name: Generate go.sum (if missing)
-        run: go mod tidy
+        run: |
+          ls -la
+          go mod tidy
 
       - name: Discover Tests
         id: get-tests

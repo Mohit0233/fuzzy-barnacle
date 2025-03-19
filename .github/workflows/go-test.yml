@@ -142,7 +142,6 @@ jobs:
 #          go run main.go
 
   discover-tests:
-    needs: setup-runner
     runs-on: ${{ matrix.runner_label }}  # Dynamically assign runner labels
     strategy:
       fail-fast: false
@@ -199,10 +198,15 @@ jobs:
           TESTS=$(go test ./... -list . | grep '^Test' | jq -R -s -c 'split("\n")[:-1]')
           echo "tests=$TESTS"
           echo "tests=$TESTS" >> $GITHUB_ENV
-          echo "tests=$TESTS" >> $GITHUB_OUTPUT
+          echo "tests=$TESTS" >> $GITHUB_OUTPUT 
+
+      - name: ✅ Log Discovered Tests
+        run: |
+          echo "🧪 The following test cases will be executed:"
+          echo '${{ steps.get-tests.outputs.tests }}' | jq -r '.[]' | sed 's/^/- /'
 
   run-tests:
-    needs: discover-tests
+    needs: [setup-runner, discover-tests]
     runs-on: ${{ matrix.runner_label }}  # Dynamically assign runner labels
     strategy:
       fail-fast: false

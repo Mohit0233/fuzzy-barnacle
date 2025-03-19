@@ -47,8 +47,10 @@ jobs:
 #          echo "public_ips=$(terraform output -raw public_ips)" >> $GITHUB_ENV
 
 
-      - name: Install Dependencies (unzip)
-        run: sudo apt-get update && sudo apt-get install -y unzip
+      - name: Install Dependencies (unzip, Node.js)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip nodejs
 
       - name: Install Terraform CLI
         uses: hashicorp/setup-terraform@v2

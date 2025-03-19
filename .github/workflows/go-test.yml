@@ -89,25 +89,8 @@ jobs:
           #            -var="instance_types=${{ env.INSTANCE_TYPES }}" \
           #            -var="runner_token=${{ secrets.RUNNER_CREATOR_GITHUB_TOKEN }}" \
           #            -var="github_repo=${{ github.repository }}"
-    
-          # Log Terraform output for debugging
-
-          echo "Raw Terraform output for runner_names: $(terraform output runner_names || true)"
           
-          terraform output -json -no-color runner_names || true
-          test_var=$(terraform output -json -no-color runner_names | jq -r 'join(",")' || true)
-          echo "test_var-$test_var-"
-
-          printf "json: %s\n" "$(terraform output -json runner_names 2>/dev/null)" || true
-          printf "none: %s\n" "$(terraform output runner_names 2>/dev/null)" || true
-          
-
-          # Final success log
-          printf "🎉 Successfully extracted runner_names: $runner_names"
-          
-          # Add to GitHub environment
-            printf "runner_names=$runner_names" >> $GITHUB_ENV
-
+          echo "runner_names=$(terraform output runner_names)" >> "$GITHUB_ENV"
 
 
       - name: Print Runner Names

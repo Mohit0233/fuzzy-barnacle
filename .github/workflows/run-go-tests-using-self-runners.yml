@@ -24,32 +24,32 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-# Can't fetch AWS CREDS
-#      - name: Configure AWS Credentials from Secrets
-#        uses: aws-actions/configure-aws-credentials@v2
-#        with:
-#          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#          aws-region: ${{ env.AWS_REGION }}
-#
-#      - name: Deploy EC2 using Terraform
-#        id: terraform-outputs
-#        run: |
-#          cd terraform
-#          terraform init
-#          terraform apply -auto-approve \
-#            -var="aws_region=${{ secrets.AWS_REGION }}" \
-#            -var="instance_types=${{ env.INSTANCE_TYPES }}" \
-#            -var="runner_token=${{ secrets.RUNNER_CREATOR_GITHUB_TOKEN }}" \
-#            -var="github_repo=${{ github.repository }}"
-#          echo "instance_ids=$(terraform output -raw instance_ids)" >> $GITHUB_ENV
-#          echo "public_ips=$(terraform output -raw public_ips)" >> $GITHUB_ENV
+      # Can't fetch AWS CREDS
+      #      - name: Configure AWS Credentials from Secrets
+      #        uses: aws-actions/configure-aws-credentials@v2
+      #        with:
+      #          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #          aws-region: ${{ env.AWS_REGION }}
+      #
+      #      - name: Deploy EC2 using Terraform
+      #        id: terraform-outputs
+      #        run: |
+      #          cd terraform
+      #          terraform init
+      #          terraform apply -auto-approve \
+      #            -var="aws_region=${{ secrets.AWS_REGION }}" \
+      #            -var="instance_types=${{ env.INSTANCE_TYPES }}" \
+      #            -var="runner_token=${{ secrets.RUNNER_CREATOR_GITHUB_TOKEN }}" \
+      #            -var="github_repo=${{ github.repository }}"
+      #          echo "instance_ids=$(terraform output -raw instance_ids)" >> $GITHUB_ENV
+      #          echo "public_ips=$(terraform output -raw public_ips)" >> $GITHUB_ENV
 
 
-#      - name: Install Dependencies (unzip, Node.js)
-#        run: |
-#          sudo apt-get update
-#          sudo apt-get install -y unzip nodejs
+      #      - name: Install Dependencies (unzip, Node.js)
+      #        run: |
+      #          sudo apt-get update
+      #          sudo apt-get install -y unzip nodejs
 
       - name: Install Terraform CLI
         uses: hashicorp/setup-terraform@v2
@@ -57,11 +57,11 @@ jobs:
           terraform_version: 1.11.2
           terraform_wrapper: false
 
-#      - name: Authenticate with Terraform Cloud
-#        env:
-#          TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}  # Store in GitHub Secrets
-#        run: |
-#          terraform login
+      #      - name: Authenticate with Terraform Cloud
+      #        env:
+      #          TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}  # Store in GitHub Secrets
+      #        run: |
+      #          terraform login
 
 
       - name: Configure Terraform Cloud Credentials
@@ -110,10 +110,10 @@ jobs:
         run: |
           echo "Runner Names (GITHUB_ENV): ${{ env.runner_names }}"
           echo "Runner Names (GITHUB_OUTPUT): ${{ steps.terraform-outputs.outputs.runner_names }}"
-          
+  
 
   setup-runners:
-    name: Setup Runner - ${{ matrix.runner }}
+    name: ${{ matrix.runner }}
     needs: create-runners
     runs-on: aws-runner-t4g.large
     strategy:
@@ -190,16 +190,14 @@ jobs:
 
   run-tests:
     name: ${{ matrix.test-name }} on ${{ matrix.runner_label }}
-    needs: [discover-tests, setup-runners]
+    needs: [ discover-tests, setup-runners ]
     runs-on: ${{ matrix.runner_label }}
     strategy:
       fail-fast: false
       matrix:
-#        runner_label: ${{ fromJson(needs.setup-runners.outputs.runner_ready) }}
-        runner_label: [aws-runner-t4g.large, aws-runner-t4g.large]
+        #        runner_label: ${{ fromJson(needs.setup-runners.outputs.runner_ready) }}
+        runner_label: [ aws-runner-t4g.large, aws-runner-t4g.large ]
         test-name: ${{ fromJson(needs.discover-tests.outputs.test-names) }}
-        include:
-          - runner_label: ${{ fromJson(needs.setup-runners.outputs.runner_ready) }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -227,7 +225,65 @@ jobs:
           go-version: 1.24
 
       - name: Run Specific Test
-        run: go test -v -run ${{ matrix.test-name }} ./...
+        id: test_execution
+        run: |
+          set +e
+          go test -v -run ${{ matrix.test-name }} ./...
+          echo "exit_code=$?" >> $GITHUB_ENV
+          exit $exit_code
+
+      - name: Save Test Result
+        if: always()
+        run: |
+          RESULT="success"
+          if [ "${{ env.exit_code }}" -ne 0 ]; then
+            RESULT="failure"
+          fi
+          echo "${{ matrix.test-name }},${RESULT}" >> $GITHUB_WORKSPACE/test-results.csv
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: ${{ github.workspace }}/test-results.csv
+
+
+  summary-report:
+    needs: run-tests
+    runs-on: ubuntu-latest
+    if: always()  # Run even if some tests fail
+    steps:
+      - name: Download Test Results
+        uses: actions/download-artifact@v3
+        with:
+          name: test-results
+
+      - name: Process Test Results
+        id: process-results
+        run: |
+          TOTAL_TESTS=0
+          PASSED=0
+          FAILED=0
+          SUMMARY_FILE="$GITHUB_STEP_SUMMARY"
+          
+          echo "| Test Name | Result |" > $SUMMARY_FILE
+          echo "|-----------|--------|" >> $SUMMARY_FILE
+          
+          while IFS=, read -r test result; do
+            TOTAL_TESTS=$((TOTAL_TESTS+1))
+            if [ "$result" = "success" ]; then
+              PASSED=$((PASSED+1))
+            else
+              FAILED=$((FAILED+1))
+            fi
+            echo "| $test | $result |" >> $SUMMARY_FILE
+          done < test-results.csv
+          
+          echo "" >> $SUMMARY_FILE
+          echo "**Total Tests:** $TOTAL_TESTS" >> $SUMMARY_FILE
+          echo "**✅ Passed:** $PASSED" >> $SUMMARY_FILE
+          echo "**❌ Failed:** $FAILED" >> $SUMMARY_FILE
 
   cleanup-runner:
     needs: run-tests

@@ -25,21 +25,45 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+# Can't fetch AWS CREDS
+#      - name: Configure AWS Credentials from Secrets
+#        uses: aws-actions/configure-aws-credentials@v2
+#        with:
+#          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#          aws-region: ${{ env.AWS_REGION }}
+#
+#      - name: Deploy EC2 using Terraform
+#        id: terraform-outputs
+#        run: |
+#          cd terraform
+#          terraform init
+#          terraform apply -auto-approve \
+#            -var="aws_region=${{ secrets.AWS_REGION }}" \
+#            -var="instance_types=${{ env.INSTANCE_TYPES }}" \
+#            -var="runner_token=${{ secrets.GITHUB_TOKEN }}" \
+#            -var="github_repo=${{ github.repository }}"
+#          echo "instance_ids=$(terraform output -raw instance_ids)" >> $GITHUB_ENV
+#          echo "public_ips=$(terraform output -raw public_ips)" >> $GITHUB_ENV
 
-      - name: Configure AWS Credentials from Secrets
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Install Terraform CLI
+        uses: hashicorp/setup-terraform@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          terraform_version: 1.5.7  # Use latest supported version
 
-      - name: Deploy EC2 using Terraform
+      - name: Authenticate with Terraform Cloud
+        env:
+          TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}  # Store in GitHub Secrets
+        run: |
+          terraform login
+
+      - name: Deploy EC2 using Terraform Cloud
         id: terraform-outputs
         run: |
           cd terraform
           terraform init
           terraform apply -auto-approve \
-            -var="aws_region=${{ secrets.AWS_REGION }}" \
+            -var="aws_region=${{ env.AWS_REGION }}" \
             -var="instance_types=${{ env.INSTANCE_TYPES }}" \
             -var="runner_token=${{ secrets.GITHUB_TOKEN }}" \
             -var="github_repo=${{ github.repository }}"
@@ -124,10 +148,18 @@ jobs:
     needs: run-on-aws
     runs-on: aws-runner-t4g.medium
     steps:
+
+     # adding this again in case we get logged out because tests took too long
+      - name: Authenticate with Terraform Cloud
+        env:
+          TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
+        run: |
+          terraform login
+
       - name: Deregister and Terminate AWS Runners
         run: |
           cd terraform
           terraform destroy -auto-approve \
-            -var="aws_region=${{ secrets.AWS_REGION }}" \
-            -var="instance_types=${{ secrets.INSTANCE_TYPES }}"
+            -var="aws_region=${{ env.AWS_REGION }}" \
+            -var="instance_types=${{ env.INSTANCE_TYPES }}"
           echo "All runners terminated."

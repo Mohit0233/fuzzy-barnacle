@@ -25,10 +25,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Debug TEST_SECRET
+      - name: Check TEST_SECRET Length
         run: |
-          echo "Encoded TEST_SECRET: $(echo -n '${{ secrets.TEST_SECRET }}' | base64)"
-    
+          echo "TEST_SECRET length: ${#TEST_SECRET}"
+        env:
+          TEST_SECRET: ${{ secrets.TEST_SECRET }}
+
 
       - name: Configure AWS Credentials from Secrets
         uses: aws-actions/configure-aws-credentials@v2

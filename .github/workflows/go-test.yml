@@ -19,8 +19,7 @@ jobs:
   setup-runner:
     runs-on: aws-runner-t4g.large
     outputs:
-      runner_names: ${{ steps.terraform-outputs.outputs.instance_ids }}
-      public_ips: ${{ steps.terraform-outputs.outputs.public_ips }}
+      runner_names: ${{ steps.terraform-outputs.outputs.runner_names }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -101,6 +100,15 @@ jobs:
       - name: Debug Runner Names
         run: |
           echo "Runner Names from output: ${{ steps.terraform-outputs.outputs.runner_names }}"
+
+      - name: Debug Terraform Output
+        run: |
+          echo "Runner Names (GITHUB_ENV): ${{ env.runner_names }}"
+          echo "Runner Names (GITHUB_OUTPUT): ${{ steps.terraform-outputs.outputs.runner_names }}"
+
+  testing:
+    needs: setup-runner
+    runs-on: aws-runner-t4g.large
 
 
   run-on-aws:

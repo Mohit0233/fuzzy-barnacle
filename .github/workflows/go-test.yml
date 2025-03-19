@@ -116,30 +116,30 @@ jobs:
 #    runs-on: aws-runner-t4g.large
 
 
-  run-on-aws:
-    needs: setup-runner
-    runs-on: ${{ matrix.runner_label }}  # Dynamically assign runner labels
-    strategy:
-      fail-fast: false
-      matrix:
-#        runner_label: ${{ fromJson(needs.setup-runner.outputs.runner_names) }}  # Use Terraform output to set runner labels
-         runner_label: [aws-runner-t4g.large, aws-runner-t4g.large]
-
-    steps:
-      - name: Check runner logging
-        run: |
-          echo "Hello from ephemeral AWS runner!"
-          uname -a
-          lscpu
-
-      - name: Install Go using setup-go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-
-      - name: Run main.go
-        run: |
-          go run main.go
+#  run-on-aws:
+#    needs: setup-runner
+#    runs-on: ${{ matrix.runner_label }}  # Dynamically assign runner labels
+#    strategy:
+#      fail-fast: false
+#      matrix:
+##        runner_label: ${{ fromJson(needs.setup-runner.outputs.runner_names) }}  # Use Terraform output to set runner labels
+#         runner_label: [aws-runner-t4g.large, aws-runner-t4g.large]
+#
+#    steps:
+#      - name: Check runner logging
+#        run: |
+#          echo "Hello from ephemeral AWS runner!"
+#          uname -a
+#          lscpu
+#
+#      - name: Install Go using setup-go
+#        uses: actions/setup-go@v5
+#        with:
+#          go-version: '1.21'
+#
+#      - name: Run main.go
+#        run: |
+#          go run main.go
 
   discover-tests:
     needs: setup-runner
@@ -164,13 +164,22 @@ jobs:
         run: |
           echo "GOPATH=${{ github.workspace }}" >> $GITHUB_ENV
           echo "GOMODCACHE=${{ github.workspace }}/go/pkg/mod" >> $GITHUB_ENV
-          echo "PATH=${{ github.workspace }}/bin:$PATH" >> $GITHUB_ENV
+          echo "PATH=${{ github.workspace }}/bin:$PATH" >> $GITHUB_ENV\
+
+      - name: Unset GOPATH
+        run: |
+          echo "GOPATH=" >> $GITHUB_ENV
+          echo "GO111MODULE=on" >> $GITHUB_ENV
 
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: 1.24
+
+      - name: Debug Go Environment
+        run: go env
+
 
       - name: Generate go.sum (if missing)
         run: |

@@ -47,10 +47,10 @@ jobs:
 #          echo "public_ips=$(terraform output -raw public_ips)" >> $GITHUB_ENV
 
 
-      - name: Install Dependencies (unzip, Node.js)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y unzip nodejs
+#      - name: Install Dependencies (unzip, Node.js)
+#        run: |
+#          sudo apt-get update
+#          sudo apt-get install -y unzip nodejs
 
       - name: Install Terraform CLI
         uses: hashicorp/setup-terraform@v2
@@ -92,42 +92,15 @@ jobs:
           # Log Terraform output for debugging
 
           echo "Raw Terraform output for runner_names: $(terraform output runner_names || true)"
-                
+          
+          terraform output -json -no-color runner_names || true
           test_var=$(terraform output -json -no-color runner_names | jq -r 'join(",")' || true)
           echo "test_var-$test_var-"
 
-
-          printf "🔍 Trying: TF_LOG=ERROR terraform output -json -no-color runner_names | jq -c ."
-            runner_names=$(TF_LOG=ERROR terraform output -json -no-color runner_names 2>/dev/null | jq -c . || true)
-          printf "runner_names: %s\n" "$runner_names"
-          
-          printf "🔍 Trying: terraform output -json -no-color runner_names | jq -c ."
-            runner_names=${runner_names:-$(terraform output -json -no-color runner_names 2>/dev/null | jq -c . || true)}
-          printf "runner_names: %s\n" "$runner_names"
-          
-          printf "🔍 Trying: terraform output -json runner_names | grep -o '\[.*\]'"
-            runner_names=${runner_names:-$(terraform output -json runner_names 2>/dev/null | grep -o '\[.*\]' || true)}
-          printf "runner_names: %s\n" "$runner_names"
-          
-          printf "🔍 Trying: terraform output runner_names | sed -n 's/.*\(\[.*\]\).*/\1/p'"
-            runner_names=${runner_names:-$(terraform output runner_names 2>/dev/null | sed -n 's/.*\(\[.*\]\).*/\1/p' || true)}
-          printf "runner_names: %s\n" "$runner_names"
-          
-          printf "🔍 Trying: terraform output -json runner_names | jq -r 'join(\",\")'"
-            runner_names=${runner_names:-$(terraform output -json runner_names 2>/dev/null | jq -r 'join(",")' || true)}
-          printf "runner_names: %s\n" "$runner_names"
-          
           printf "json: %s\n" "$(terraform output -json runner_names 2>/dev/null)" || true
           printf "none: %s\n" "$(terraform output runner_names 2>/dev/null)" || true
-          printf "raw: %s\n" "$(terraform output -raw runner_names 2>/dev/null)" || true
           
-          
-          # Check if runner_names is empty
-            if [ -z "$runner_names" ]; then
-          printf "🚨 Error: Could not extract runner_names properly after multiple attempts"
-            exit 1
-            fi
-          
+
           # Final success log
           printf "🎉 Successfully extracted runner_names: $runner_names"
           

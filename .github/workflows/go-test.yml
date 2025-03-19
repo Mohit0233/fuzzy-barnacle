@@ -91,14 +91,18 @@ jobs:
           #            -var="github_repo=${{ github.repository }}"
           
           echo "runner_names=$(terraform output -json runner_names | jq -r 'join(",")')" >> "$GITHUB_ENV"
+          echo "runner_names=$(terraform output -json runner_names | jq -r 'join(",")')" >> "$GITHUB_OUTPUT"
+
           # Log it separately
           RUNNER_NAMES="$(terraform output -json runner_names | jq -r 'join(",")')"
           echo "Runner Names: $RUNNER_NAMES"
 
 
-      - name: Print Runner Names
+      - name: Debug Runner Names
         run: |
-          echo "Runner Names: $runner_names"
+          echo "Runner Names from output: ${{ steps.terraform-outputs.outputs.runner_names }}"
+
+
   run-on-aws:
     needs: setup-runner
     runs-on: ${{ matrix.runner_label }}  # Dynamically assign runner labels
@@ -124,11 +128,11 @@ jobs:
 
   discover-tests:
     needs: setup-runner
-    runs-on: aws-runner-t4g.large
+    runs-on: ${{ matrix.runner_label }}  # Dynamically assign runner labels
     strategy:
       fail-fast: false
       matrix:
-        instance_ip: ${{ fromJson(needs.setup-runner.outputs.public_ips) }}
+        runner_label: ${{ fromJson(needs.setup-runner.outputs.runner_names) }}  # Use Terraform output to set runner labels
     outputs:
       test-names: ${{ steps.get-tests.outputs.tests }}
     steps:

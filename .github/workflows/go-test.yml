@@ -93,18 +93,65 @@ jobs:
           echo "Raw Terraform output for runner_names:"
           terraform output runner_names || true
           
-          echo "JSON Terraform output for runner_names:"
-          terraform output -json runner_names || true
+#          echo "JSON Terraform output for runner_names:"
+#          terraform output -json runner_names || true
+#
+#          runner_unfiltered=$(terraform output -json runner_names | sed 's/"/\\"/g')
+#
+#          echo runner_unfiltered is -$runner_unfiltered-
+#
+#          runner_names=$(echo "$runner_unfiltered" | jq -r 'join(",")')
+#
+#          echo "Parsed runner_names: $runner_names"
+#
+#          echo "runner_names=$runner_names" >> $GITHUB_ENV
+
+          # Initialize empty variable
+          runner_names=""
+
+          # Function to try a command and log the error if it fails
+          try_command() {
+              local cmd="$1"
+              echo "Trying: $cmd"
+              output=$(eval "$cmd" 2>&1) # Capture both stdout and stderr
           
-          runner_unfiltered=$(terraform output -json runner_names | sed 's/"/\\"/g')
-        
-          echo runner_unfiltered is -$runner_unfiltered-
-          
-          runner_names=$(echo "$runner_unfiltered" | jq -r 'join(",")')
-          
-          echo "Parsed runner_names: $runner_names"
-          
+              if [ $? -eq 0 ]; then
+                  echo "✅ Success: $cmd"
+                  echo "Output: $output"
+                  runner_names="$output"
+                  return 0
+              else
+                  echo "❌ Failed: $cmd"
+                  echo "Error: $output"
+                  return 1
+              fi
+          }
+
+          # Try different methods to extract clean JSON
+          if try_command 'TF_LOG=ERROR terraform output -json -no-color runner_names | jq -c .'; then
+              :
+          elif try_command 'terraform output -json -no-color runner_names | jq -c .'; then
+              :
+          elif try_command 'terraform output -json runner_names | grep -o "\[.*\]"'; then
+              :
+          elif try_command 'terraform output runner_names | sed -n "s/.*\(\[.*\]\).*/\1/p"'; then
+              :
+          elif try_command 'terraform output -json runner_names | jq -r "join(\",\")"'; then
+              :
+          else
+              echo "🚨 Error: Could not extract runner_names properly after multiple attempts"
+              exit 1
+          fi
+
+          # Final success log
+          echo "🎉 Successfully extracted runner_names: $runner_names"
+
+          # Add to GitHub environment
           echo "runner_names=$runner_names" >> $GITHUB_ENV
+
+
+
+
 
       - name: Print Runner Names
         run: |

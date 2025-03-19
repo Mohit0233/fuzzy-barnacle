@@ -77,15 +77,6 @@ jobs:
             }
           }' > ~/.terraform.d/credentials.tfrc.json
 
-      - name: Check if GITHUB_TOKEN is set
-        run: |
-          if [[ -z "${{ secrets.GITHUB_TOKEN }}" ]]; then
-            echo "GITHUB_TOKEN is missing!"
-            exit 1
-          else
-            echo "GITHUB_TOKEN is set."
-          fi
-
       - name: Deploy EC2 using Terraform Cloud
         id: terraform-outputs
         run: |
@@ -203,5 +194,7 @@ jobs:
           cd terraform
           terraform destroy -auto-approve \
             -var="aws_region=${{ env.AWS_REGION }}" \
-            -var="instance_types=${{ env.INSTANCE_TYPES }}"
+            -var="instance_types=${{ env.INSTANCE_TYPES }}" \
+            -var="runner_token=${{ secrets.GITHUB_TOKEN }}" \
+            -var="github_repo=${{ github.repository }}"
           echo "All runners terminated."

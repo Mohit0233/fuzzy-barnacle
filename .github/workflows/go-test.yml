@@ -57,11 +57,26 @@ jobs:
         with:
           terraform_version: 1.5.7  # Use latest supported version
 
-      - name: Authenticate with Terraform Cloud
+#      - name: Authenticate with Terraform Cloud
+#        env:
+#          TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}  # Store in GitHub Secrets
+#        run: |
+#          terraform login
+
+
+      - name: Configure Terraform Cloud Credentials
         env:
-          TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}  # Store in GitHub Secrets
+          TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
         run: |
-          terraform login
+          mkdir -p ~/.terraform.d
+          echo '{
+            "credentials": {
+              "app.terraform.io": {
+                "token": "'"$TF_API_TOKEN"'"
+              }
+            }
+          }' > ~/.terraform.d/credentials.tfrc.json
+
 
       - name: Deploy EC2 using Terraform Cloud
         id: terraform-outputs

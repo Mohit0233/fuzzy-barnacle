@@ -122,7 +122,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner_label: ${{ fromJson(needs.setup-runner.outputs.runner_names) }}  # Use Terraform output to set runner labels
+#        runner_label: ${{ fromJson(needs.setup-runner.outputs.runner_names) }}  # Use Terraform output to set runner labels
+         runner_label: '["aws-runner-t4g.large", "aws-runner-t4g.large"]'
+
     steps:
       - name: Check runner logging
         run: |
@@ -145,7 +147,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner_label: ${{ fromJson(needs.setup-runner.outputs.runner_names) }}  # Use Terraform output to set runner labels
+#        runner_label: ${{ fromJson(needs.setup-runner.outputs.runner_names) }}  # Use Terraform output to set runner labels
+         runner_label: '["aws-runner-t4g.large", "aws-runner-t4g.large"]'
     outputs:
       test-names: ${{ steps.get-tests.outputs.tests }}
     steps:
@@ -173,7 +176,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        instance_ip: ${{ fromJson(needs.setup-runner.outputs.public_ips) }}
+#        runner_label: ${{ fromJson(needs.setup-runner.outputs.runner_names) }}  # Use Terraform output to set runner labels
+        runner_label: '["aws-runner-t4g.large", "aws-runner-t4g.large"]'
         test-name: ${{ fromJson(needs.discover-tests.outputs.test-names) }}
     steps:
       - name: Checkout Code

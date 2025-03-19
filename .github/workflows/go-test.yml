@@ -96,7 +96,7 @@ jobs:
             terraform output -json runner_names || true
         
             # Capture the runner_names output
-            runner_names=$(terraform output -json runner_names 2>/dev/null | jq -c '.' || terraform output -raw runner_names)
+            runner_names=$(terraform output -json runner_names)
         
             # Log parsed runner_names
             echo "Parsed runner_names: $runner_names"

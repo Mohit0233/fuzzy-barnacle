@@ -90,53 +90,44 @@ jobs:
     
           # Log Terraform output for debugging
 
-          echo "Raw Terraform output for runner_names:"
-          terraform output runner_names || true
-
-          # Initialize empty variable
-          runner_names=""
-
-          # Function to try a command and log the error if it fails
-          try_command() {
-              local cmd="$1"
-              echo "Trying: $cmd"
-              output=$(eval "$cmd" 2>&1) # Capture both stdout and stderr
+          echo "Raw Terraform output for runner_names: $(terraform output runner_names || true)"
           
-              if [ $? -eq 0 ]; then
-                  echo "✅ Success: $cmd"
-                  echo "Output: $output"
-                  runner_names="$output"
-                  return 0
-              else
-                  echo "❌ Failed: $cmd"
-                  echo "Error: $output"
-                  return 1
-              fi
-          }
-
-          # Try different methods to extract clean JSON
-          if try_command 'TF_LOG=ERROR terraform output -json -no-color runner_names | jq -c .'; then
-              :
-          elif try_command 'terraform output -json -no-color runner_names | jq -c .'; then
-              :
-          elif try_command 'terraform output -json runner_names | grep -o "\[.*\]"'; then
-              :
-          elif try_command 'terraform output runner_names | sed -n "s/.*\(\[.*\]\).*/\1/p"'; then
-              :
-          elif try_command 'terraform output -json runner_names | jq -r "join(\",\")"'; then
-              :
-          else
-              echo "🚨 Error: Could not extract runner_names properly after multiple attempts"
-              exit 1
-          fi
-
+          printf "🔍 Trying: TF_LOG=ERROR terraform output -json -no-color runner_names | jq -c ."
+            runner_names=$(TF_LOG=ERROR terraform output -json -no-color runner_names 2>/dev/null | jq -c . || true)
+          printf "runner_names: %s\n" "$runner_names"
+          
+          printf "🔍 Trying: terraform output -json -no-color runner_names | jq -c ."
+            runner_names=${runner_names:-$(terraform output -json -no-color runner_names 2>/dev/null | jq -c . || true)}
+          printf "runner_names: %s\n" "$runner_names"
+          
+          printf "🔍 Trying: terraform output -json runner_names | grep -o '\[.*\]'"
+            runner_names=${runner_names:-$(terraform output -json runner_names 2>/dev/null | grep -o '\[.*\]' || true)}
+          printf "runner_names: %s\n" "$runner_names"
+          
+          printf "🔍 Trying: terraform output runner_names | sed -n 's/.*\(\[.*\]\).*/\1/p'"
+            runner_names=${runner_names:-$(terraform output runner_names 2>/dev/null | sed -n 's/.*\(\[.*\]\).*/\1/p' || true)}
+          printf "runner_names: %s\n" "$runner_names"
+          
+          printf "🔍 Trying: terraform output -json runner_names | jq -r 'join(\",\")'"
+            runner_names=${runner_names:-$(terraform output -json runner_names 2>/dev/null | jq -r 'join(",")' || true)}
+          printf "runner_names: %s\n" "$runner_names"
+          
+          printf "json: %s\n" "$(terraform output -json runner_names 2>/dev/null)" || true
+          printf "none: %s\n" "$(terraform output runner_names 2>/dev/null)" || true
+          printf "raw: %s\n" "$(terraform output -raw runner_names 2>/dev/null)" || true
+          
+          
+          # Check if runner_names is empty
+            if [ -z "$runner_names" ]; then
+          printf "🚨 Error: Could not extract runner_names properly after multiple attempts"
+            exit 1
+            fi
+          
           # Final success log
-          echo "🎉 Successfully extracted runner_names: $runner_names"
-
+          printf "🎉 Successfully extracted runner_names: $runner_names"
+          
           # Add to GitHub environment
-          echo "runner_names=$runner_names" >> $GITHUB_ENV
-
-
+            printf "runner_names=$runner_names" >> $GITHUB_ENV
 
 
 

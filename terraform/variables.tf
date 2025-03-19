@@ -5,7 +5,7 @@ variable "aws_region" {
 
 variable "instance_types" {
   description = "List of EC2 instance types to create"
-  type        = list(string)
+  type = list(string)
 }
 
 variable "runner_token" {
@@ -21,4 +21,5 @@ variable "github_repo" {
 variable "security_group" {
   description = "Security group ID for the EC2 instance"
   type        = string
+  default     = "sg-0db0b78a919fb1799"
 }

@@ -90,14 +90,15 @@ jobs:
             -var="github_repo=${{ github.repository }}"
           echo "instance_ids=$(terraform output -raw instance_ids)" >> $GITHUB_ENV
           echo "public_ips=$(terraform output -raw public_ips)" >> $GITHUB_ENV
+          echo "runner_names=$(terraform output -json runner_names)" >> $GITHUB_ENV
 
   run-on-aws:
     needs: setup-runner
-    runs-on: [self-hosted, linux]
+    runs-on: ${{ matrix.runner_label }}  # Dynamically assign runner labels
     strategy:
       fail-fast: false
       matrix:
-        instance_ip: ${{ fromJson(needs.setup-runner.outputs.public_ips) }}
+        runner_label: ${{ fromJson(needs.setup-runner.outputs.runner_names) }}  # Use Terraform output to set runner labels
     steps:
       - name: Check runner logging
         run: |
@@ -116,7 +117,7 @@ jobs:
 
   discover-tests:
     needs: setup-runner
-    runs-on: [self-hosted, linux]
+    runs-on: aws-runner-t4g.large
     strategy:
       fail-fast: false
       matrix:

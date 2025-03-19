@@ -170,7 +170,8 @@ jobs:
         run: |
           echo "GOPATH=" >> $GITHUB_ENV
           echo "GO111MODULE=on" >> $GITHUB_ENV
-
+          echo "HOME=/home/ubuntu" >> $GITHUB_ENV
+          echo "GOCACHE=/home/ubuntu/.cache/go-build" >> $GITHUB_ENV
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -179,6 +180,12 @@ jobs:
 
       - name: Debug Go Environment
         run: go env
+
+      - name: Debug Current User
+        run: |
+          whoami
+          id
+          env | grep HOME
 
 
       - name: Generate go.sum (if missing)

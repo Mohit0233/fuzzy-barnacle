@@ -197,12 +197,13 @@ jobs:
         id: get-tests
         run: |
           TESTS=$(go test ./... -list . | grep '^Test' | jq -R -s -c 'split("\n")[:-1]')
+          echo "tests=$TESTS"
           echo "tests=$TESTS" >> $GITHUB_ENV
           echo "tests=$TESTS" >> $GITHUB_OUTPUT
 
   run-tests:
     needs: discover-tests
-    runs-on: [self-hosted, linux]
+    runs-on: ${{ matrix.runner_label }}  # Dynamically assign runner labels
     strategy:
       fail-fast: false
       matrix:
@@ -212,6 +213,25 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+
+      - name: Set Go Environment Variables
+        run: |
+          echo "GOMODCACHE=$(go env GOMODCACHE)" >> $GITHUB_ENV
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+
+      - name: Set Go Paths
+        run: |
+          echo "GOPATH=${{ github.workspace }}" >> $GITHUB_ENV
+          echo "GOMODCACHE=${{ github.workspace }}/go/pkg/mod" >> $GITHUB_ENV
+          echo "PATH=${{ github.workspace }}/bin:$PATH" >> $GITHUB_ENV\
+
+      - name: Unset GOPATH
+        run: |
+          echo "GOPATH=" >> $GITHUB_ENV
+          echo "GO111MODULE=on" >> $GITHUB_ENV
+          echo "HOME=/home/ubuntu" >> $GITHUB_ENV
+          echo "GOCACHE=/home/ubuntu/.cache/go-build" >> $GITHUB_ENV
 
       - name: Set up Go
         uses: actions/setup-go@v5

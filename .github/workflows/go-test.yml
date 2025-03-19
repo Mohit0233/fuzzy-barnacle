@@ -12,8 +12,8 @@ permissions:
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION || 'ap-south-1' }}
-  INSTANCE_TYPES: ${{ secrets.INSTANCE_TYPES || '["t4g.small", "t4g.medium"]' }}
-
+  # INSTANCE_TYPES: ${{ secrets.INSTANCE_TYPES && secrets.INSTANCE_TYPES != '' && format('{0}', secrets.INSTANCE_TYPES) || '["t4g.small", "t4g.medium"]' }}
+  INSTANCE_TYPES: '["t4g.small", "t4g.medium"]'
 
 jobs:
   setup-runner:

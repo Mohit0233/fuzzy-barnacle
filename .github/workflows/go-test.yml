@@ -92,6 +92,14 @@ jobs:
 
           echo "Raw Terraform output for runner_names: $(terraform output runner_names || true)"
           
+          echo $(terraform output -json runner_names) | jq -r 'join(",")'     
+          echo $(terraform output -json runner_names) | jq -r 'join(",")'     
+          echo $(terraform output -json runner_names) | jq -r 'join(",")'     
+          echo $(terraform output -json runner_names) | jq -r 'join(",")'
+          test_var=$(terraform output -json -no-color runner_names | jq -r 'join(",")')
+          echo "test_var-$test_var-"
+
+
           printf "🔍 Trying: TF_LOG=ERROR terraform output -json -no-color runner_names | jq -c ."
             runner_names=$(TF_LOG=ERROR terraform output -json -no-color runner_names 2>/dev/null | jq -c . || true)
           printf "runner_names: %s\n" "$runner_names"

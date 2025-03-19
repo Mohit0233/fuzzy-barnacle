@@ -189,20 +189,20 @@ jobs:
           echo '${{ steps.get-tests.outputs.tests }}' | jq -r '.[]' | sed 's/^/- /'
 
   run-tests:
-    needs: [setup-runners, discover-tests]
-    name: ${{ matrix.test-name }}
-    runs-on: ${{ matrix.runner_label }}  # Dynamically assign runner labels
+    name: ${{ matrix.test-name }} on ${{ matrix.runner_label }}
+    needs: [discover-tests, setup-runners]
+    runs-on: ${{ matrix.runner_label }}
     strategy:
       fail-fast: false
       matrix:
 #        runner_label: ${{ fromJson(needs.setup-runners.outputs.runner_ready) }}
         runner_label: [aws-runner-t4g.large, aws-runner-t4g.large]
         test-name: ${{ fromJson(needs.discover-tests.outputs.test-names) }}
+        include:
+          - runner_label: ${{ fromJson(needs.setup-runners.outputs.runner_ready) }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
-
       - name: Set Go Environment Variables
         run: |
           echo "GOMODCACHE=$(go env GOMODCACHE)" >> $GITHUB_ENV

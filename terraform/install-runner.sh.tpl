@@ -41,6 +41,6 @@ export RUNNER_TOKEN=$(curl -s -X POST $${base_api_url}/$${orgs_or_repos}/${GITHU
 
 
 execute_command sudo chown -R ubuntu:ubuntu /home/ubuntu/actions-runner
-execute_command sudo -u ubuntu ./config.sh --url https://github.com/${GITHUB_REPO} --token $RUNNER_TOKEN --unattended --name "$RUNNER_NAME" --labels "$RUNNER_NAME" --ephemeral
+execute_command sudo -u ubuntu ./config.sh --url https://github.com/${GITHUB_REPO} --token $RUNNER_TOKEN --unattended --name "$RUNNER_NAME" --labels "$RUNNER_NAME"
 execute_command ./svc.sh install
 execute_command ./svc.sh start

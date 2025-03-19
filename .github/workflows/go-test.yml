@@ -1,14 +1,10 @@
 name: Go Test with Ephemeral Runner
 
-#on:
-#  push:
-#    branches:
-#      - main
-#  pull_request:
-
-
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
 
 permissions:
   contents: read
@@ -21,7 +17,7 @@ env:
 
 jobs:
   setup-runner:
-    runs-on: aws-runner-t4g.medium
+    runs-on: aws-runner-t4g.large
     outputs:
       runner_names: ${{ steps.terraform-outputs.outputs.instance_ids }}
       public_ips: ${{ steps.terraform-outputs.outputs.public_ips }}
@@ -168,7 +164,7 @@ jobs:
 
   cleanup-runner:
     needs: run-on-aws
-    runs-on: aws-runner-t4g.medium
+    runs-on: aws-runner-t4g.large
     steps:
 
      # adding this again in case we get logged out because tests took too long

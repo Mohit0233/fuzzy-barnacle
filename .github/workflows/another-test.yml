@@ -1,0 +1,25 @@
+name: Test Runner  # Workflow name
+
+
+on:
+  workflow_dispatch: 
+
+
+jobs:
+  my-job:
+    runs-on: aws-runner-t4g.medium  
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4  
+
+      - name: Check Runner
+        run: echo "Running on aws-runner-t4g.medium"
+
+      - name: Sleep for 30 seconds
+        run: sleep 30
+
+      - name: Print Current Directory
+        run: pwd
+
+      - name: List Files in Repository
+        run: ls -la /home/ubuntu

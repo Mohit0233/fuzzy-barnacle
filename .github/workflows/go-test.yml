@@ -215,7 +215,7 @@ jobs:
         run: go test -v -run ${{ matrix.test-name }} ./...
 
   cleanup-runner:
-    needs: run-on-aws
+    needs: run-tests
     runs-on: aws-runner-t4g.large
     if: always()  # Ensures this runs even if previous jobs fail
     steps:

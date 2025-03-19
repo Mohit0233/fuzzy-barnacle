@@ -55,7 +55,7 @@ jobs:
       - name: Install Terraform CLI
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: 1.5.7  # Use latest supported version
+          terraform_version: 1.11.2
 
 #      - name: Authenticate with Terraform Cloud
 #        env:

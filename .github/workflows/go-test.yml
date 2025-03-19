@@ -92,19 +92,6 @@ jobs:
 
           echo "Raw Terraform output for runner_names:"
           terraform output runner_names || true
-          
-#          echo "JSON Terraform output for runner_names:"
-#          terraform output -json runner_names || true
-#
-#          runner_unfiltered=$(terraform output -json runner_names | sed 's/"/\\"/g')
-#
-#          echo runner_unfiltered is -$runner_unfiltered-
-#
-#          runner_names=$(echo "$runner_unfiltered" | jq -r 'join(",")')
-#
-#          echo "Parsed runner_names: $runner_names"
-#
-#          echo "runner_names=$runner_names" >> $GITHUB_ENV
 
           # Initialize empty variable
           runner_names=""

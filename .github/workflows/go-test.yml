@@ -82,11 +82,12 @@ jobs:
         run: |
           cd terraform
           terraform init
-          terraform apply -auto-approve \
-            -var="aws_region=${{ env.AWS_REGION }}" \
-            -var="instance_types=${{ env.INSTANCE_TYPES }}" \
-            -var="runner_token=${{ secrets.RUNNER_CREATOR_GITHUB_TOKEN }}" \
-            -var="github_repo=${{ github.repository }}"
+          terraform apply -auto-approve 
+          #          
+          #            -var="aws_region=${{ env.AWS_REGION }}" \
+          #            -var="instance_types=${{ env.INSTANCE_TYPES }}" \
+          #            -var="runner_token=${{ secrets.RUNNER_CREATOR_GITHUB_TOKEN }}" \
+          #            -var="github_repo=${{ github.repository }}"
     
           # Log Terraform output for debugging
 
@@ -236,9 +237,10 @@ jobs:
       - name: Deregister and Terminate AWS Runners
         run: |
           cd terraform
-          terraform destroy -auto-approve \
-            -var="aws_region=${{ env.AWS_REGION }}" \
-            -var="instance_types=${{ env.INSTANCE_TYPES }}" \
-            -var="runner_token=${{ secrets.RUNNER_CREATOR_GITHUB_TOKEN }}" \
-            -var="github_repo=${{ github.repository }}"
+          terraform destroy -auto-approve
+#               \
+#            -var="aws_region=${{ env.AWS_REGION }}" \
+#            -var="instance_types=${{ env.INSTANCE_TYPES }}" \
+#            -var="runner_token=${{ secrets.RUNNER_CREATOR_GITHUB_TOKEN }}" \
+#            -var="github_repo=${{ github.repository }}"
           echo "All runners terminated."

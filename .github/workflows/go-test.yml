@@ -142,12 +142,7 @@ jobs:
 #          go run main.go
 
   discover-tests:
-    runs-on: ${{ matrix.runner_label }}  # Dynamically assign runner labels
-    strategy:
-      fail-fast: false
-      matrix:
-#        runner_label: ${{ fromJson(needs.setup-runner.outputs.runner_names) }}  # Use Terraform output to set runner labels
-         runner_label: [aws-runner-t4g.large, aws-runner-t4g.large]
+    runs-on: aws-runner-t4g.large
     outputs:
       test-names: ${{ steps.get-tests.outputs.tests }}
     steps:
@@ -207,6 +202,7 @@ jobs:
 
   run-tests:
     needs: [setup-runner, discover-tests]
+    name: ${{ matrix.test-name }}
     runs-on: ${{ matrix.runner_label }}  # Dynamically assign runner labels
     strategy:
       fail-fast: false
@@ -247,7 +243,6 @@ jobs:
 
   cleanup-runner:
     needs: run-tests
-    name: Run Test - ${{ matrix.test-name }}
     runs-on: aws-runner-t4g.large
     if: always()  # Ensures this runs even if previous jobs fail
     steps:

@@ -87,9 +87,22 @@ jobs:
             -var="instance_types=${{ env.INSTANCE_TYPES }}" \
             -var="runner_token=${{ secrets.RUNNER_CREATOR_GITHUB_TOKEN }}" \
             -var="github_repo=${{ github.repository }}"
-          echo "instance_ids=$(terraform output -json instance_ids | jq -r '.')" >> $GITHUB_ENV
-          echo "public_ips=$(terraform output -json public_ips | jq -r '.')" >> $GITHUB_ENV
-          echo "runner_names=$(terraform output -json runner_names | jq -r '.')" >> $GITHUB_ENV
+    
+            # Log Terraform output for debugging
+            echo "Raw Terraform output for runner_names:"
+            terraform output runner_names || true
+        
+            echo "JSON Terraform output for runner_names:"
+            terraform output -json runner_names || true
+        
+            # Capture the runner_names output
+            runner_names=$(terraform output -json runner_names 2>/dev/null | jq -c '.' || terraform output -raw runner_names)
+        
+            # Log parsed runner_names
+            echo "Parsed runner_names: $runner_names"
+        
+            # Add to GitHub environment
+            echo "runner_names=$runner_names" >> $GITHUB_ENV
 
       - name: Print Runner Names
         run: |

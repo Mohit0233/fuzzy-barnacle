@@ -1,4 +1,4 @@
-name: Go Test Runner (Per Test)
+name: Go Test with Ephemeral Runner
 
 on:
   push:
@@ -6,9 +6,78 @@ on:
       - main
   pull_request:
 
+permissions:
+  contents: read
+
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION || 'ap-south-1' }}
+  INSTANCE_TYPES: ${{ secrets.INSTANCE_TYPES || '["t4g.small", "t4g.medium"]' }}
+
+
 jobs:
+  setup-runner:
+    runs-on: aws-runner-t4g.medium
+    outputs:
+      runner_names: ${{ steps.terraform-outputs.outputs.instance_ids }}
+      public_ips: ${{ steps.terraform-outputs.outputs.public_ips }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials from Secrets
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy EC2 using Terraform
+        id: terraform-outputs
+        run: |
+          cd terraform
+          terraform init
+          terraform apply -auto-approve \
+            -var="aws_region=${{ secrets.AWS_REGION }}" \
+            -var="instance_types=${{ secrets.INSTANCE_TYPES }}" \
+            -var="runner_token=${{ secrets.GITHUB_TOKEN }}" \
+            -var="github_repo=${{ github.repository }}"
+          echo "instance_ids=$(terraform output -raw instance_ids)" >> $GITHUB_ENV
+          echo "public_ips=$(terraform output -raw public_ips)" >> $GITHUB_ENV
+
+  run-on-aws:
+    needs: setup-runner
+    runs-on: [self-hosted, linux]
+    strategy:
+      fail-fast: false
+      matrix:
+        instance_ip: ${{ fromJson(needs.setup-runner.outputs.public_ips) }}
+    steps:
+      - name: Check runner logging
+        run: |
+          echo "Hello from ephemeral AWS runner!"
+          uname -a
+          lscpu
+
+      - name: Install Go using setup-go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run main.go
+        run: |
+          go run main.go
+
   discover-tests:
-    runs-on: ubuntu-latest
+    needs: setup-runner
+    runs-on: [self-hosted, linux]
+    strategy:
+      fail-fast: false
+      matrix:
+        instance_ip: ${{ fromJson(needs.setup-runner.outputs.public_ips) }}
     outputs:
       test-names: ${{ steps.get-tests.outputs.tests }}
     steps:
@@ -32,10 +101,11 @@ jobs:
 
   run-tests:
     needs: discover-tests
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     strategy:
       fail-fast: false
       matrix:
+        instance_ip: ${{ fromJson(needs.setup-runner.outputs.public_ips) }}
         test-name: ${{ fromJson(needs.discover-tests.outputs.test-names) }}
     steps:
       - name: Checkout Code
@@ -49,3 +119,14 @@ jobs:
       - name: Run Specific Test
         run: go test -v -run ${{ matrix.test-name }} ./...
 
+  cleanup-runner:
+    needs: run-on-aws
+    runs-on: aws-runner-t4g.medium
+    steps:
+      - name: Deregister and Terminate AWS Runners
+        run: |
+          cd terraform
+          terraform destroy -auto-approve \
+            -var="aws_region=${{ secrets.AWS_REGION }}" \
+            -var="instance_types=${{ secrets.INSTANCE_TYPES }}"
+          echo "All runners terminated."

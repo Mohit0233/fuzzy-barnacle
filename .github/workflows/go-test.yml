@@ -91,12 +91,8 @@ jobs:
           # Log Terraform output for debugging
 
           echo "Raw Terraform output for runner_names: $(terraform output runner_names || true)"
-          
-          echo $(terraform output -json runner_names) | jq -r 'join(",")'     
-          echo $(terraform output -json runner_names) | jq -r 'join(",")'     
-          echo $(terraform output -json runner_names) | jq -r 'join(",")'     
-          echo $(terraform output -json runner_names) | jq -r 'join(",")'
-          test_var=$(terraform output -json -no-color runner_names | jq -r 'join(",")')
+                
+          test_var=$(terraform output -json -no-color runner_names | jq -r 'join(",")' || true)
           echo "test_var-$test_var-"
 
 

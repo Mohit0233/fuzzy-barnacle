@@ -251,21 +251,23 @@ jobs:
           fi
           FILE_PATH="${{ github.workspace }}/test-results-${{ matrix.runner_label }}-${{ matrix.test-name }}.csv"
           echo "Saving results to: $FILE_PATH"
-          echo "${{ matrix.test-name }},${RESULT}" > "$FILE_PATH"  # Use `>` instead of `>>` to create a new file
-          ls -l "$FILE_PATH"  # Debugging step to verify file creation
+          echo "${{ matrix.runner_label }},${{ matrix.test-name }},$RESULT" > "$FILE_PATH"  # Store runner + test name + result
+          cat "$FILE_PATH"  # Debugging: Ensure file content is correct
+
 
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.runner_label }}-${{ matrix.test-name }}  # Unique name per test & runner
-          path: ${{ github.workspace }}/test-results-${{ matrix.runner_label }}-${{ matrix.test-name }}.csv
+          name: test-results  # Single artifact name for all test results
+          path: ${{ github.workspace }}/test-results/  # Upload entire test-results folder
+
 
       - name: Debug Test Results File
         if: always()
         run: |
-          echo "Checking if file exists:"
-          ls -l ${{ github.workspace }}/test-results-${{ matrix.runner_label }}-${{ matrix.test-name }}.csv || echo "File not found!"
+          echo "Checking if file exists in test-results/:"
+          ls -l ${{ github.workspace }}/test-results/ || echo "⚠️ No test results found!"
 
 
   summary-report:
@@ -273,10 +275,23 @@ jobs:
     runs-on: ubuntu-latest
     if: always()  # Run even if some tests fail
     steps:
-      - name: Download All Test Artifacts
+      - name: Download All Test Results
         uses: actions/download-artifact@v4
         with:
-          path: test-results  # Download all artifacts into this folder
+          path: test-results  # Downloads all artifacts here
+
+      - name: Move Test Results from Folders
+        run: |
+          echo "🔹 Moving test result files out of artifact folders."
+          
+          # Debugging: Show current directory structure
+          ls -R test-results/
+          
+          # Find and move CSV files out of their folders
+          find test-results/ -mindepth 2 -type f -name "*.csv" -exec mv {} test-results/ \;
+          
+          echo "🔍 Final test-results directory after moving files:"
+          ls -l test-results/
 
       - name: Merge Test Results
         run: |
@@ -291,28 +306,20 @@ jobs:
           echo "Runner,Test Name,Result" > "$FINAL_RESULTS"
           
           echo "🔍 Checking for test result files in test-results/ directory:"
-          ls -l test-results/ || echo "⚠️ No test results found!"
+          ls -l test-results/
           
-          # Loop through all result files
-          for file in test-results/test-results-*.csv; do
+          # Loop through all CSV files directly in `test-results/`
+          for file in test-results/*.csv; do
             if [[ -f "$file" ]]; then
               echo "✅ Processing: $file"
-          
-              # Extract runner and test name from the filename
-              filename=$(basename "$file")
-              runner=$(echo "$filename" | cut -d'-' -f3-4)  # Extracts aws-runner-t4g.large
-              test=$(echo "$filename" | cut -d'-' -f5 | sed 's/.csv//')
-              result=$(cat "$file")
-          
-              echo "$runner,$test,$result" >> "$FINAL_RESULTS"
-            else
-              echo "⚠️ No valid test result file found: $file"
+              cat "$file" >> "$FINAL_RESULTS"
             fi
           done
           
           # Debugging output: Print final CSV file
           echo "🔍 Final CSV Output:"
           cat "$FINAL_RESULTS"
+
 
       - name: Output Test Summary
         run: |

@@ -197,7 +197,6 @@ jobs:
         run: |
           echo "🧪 The following test cases will be executed:"
           echo '${{ steps.get-tests.outputs.tests }}' | jq -r '.[]' | sed 's/^/- /'
-
   run-tests:
     name: ${{ matrix.test-name }} on ${{ matrix.runner_label }}
     needs: [ discover-tests, setup-runners ]
@@ -205,155 +204,80 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        #        runner_label: ${{ fromJson(needs.setup-runners.outputs.runner_ready) }}
         runner_label: [ aws-runner-t4g.large, aws-runner-t4g.large ]
         test-name: ${{ fromJson(needs.discover-tests.outputs.test-names) }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-      - name: Set Go Environment Variables
-        run: |
-          echo "GOMODCACHE=$(go env GOMODCACHE)" >> $GITHUB_ENV
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-
-      - name: Set Go Paths
-        run: |
-          echo "GOPATH=${{ github.workspace }}" >> $GITHUB_ENV
-          echo "GOMODCACHE=${{ github.workspace }}/go/pkg/mod" >> $GITHUB_ENV
-          echo "PATH=${{ github.workspace }}/bin:$PATH" >> $GITHUB_ENV\
-
-      - name: Unset GOPATH
-        run: |
-          echo "GOPATH=" >> $GITHUB_ENV
-          echo "GO111MODULE=on" >> $GITHUB_ENV
-          echo "HOME=/home/ubuntu" >> $GITHUB_ENV
-          echo "GOCACHE=/home/ubuntu/.cache/go-build" >> $GITHUB_ENV
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24
+          go-version: '1.24'
 
       - name: Run Specific Test
         id: test_execution
         run: |
+          mkdir -p test-results
           set +e
           go test -v -run ${{ matrix.test-name }} ./...
-          echo "exit_code=$?" >> $GITHUB_ENV
-          exit $exit_code
-
-      - name: Save Test Result
-        if: always()
-        run: |
+          EXIT_CODE=$?
           RESULT="success"
-          if [ "${{ env.exit_code }}" -ne 0 ]; then
+          if [ "$EXIT_CODE" -ne 0 ]; then
             RESULT="failure"
           fi
-          FILE_PATH="${{ github.workspace }}/test-results-${{ matrix.runner_label }}-${{ matrix.test-name }}.csv"
+          FILE_PATH="test-results/${{ matrix.runner_label }}-${{ matrix.test-name }}.csv"
           echo "Saving results to: $FILE_PATH"
-          echo "${{ matrix.runner_label }},${{ matrix.test-name }},$RESULT" > "$FILE_PATH"  # Store runner + test name + result
-          cat "$FILE_PATH"  # Debugging: Ensure file content is correct
-
+          echo "${{ matrix.runner_label }},${{ matrix.test-name }},$RESULT" > "$FILE_PATH"
+          exit $EXIT_CODE
 
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results  # Single artifact name for all test results
-          path: ${{ github.workspace }}/test-results/  # Upload entire test-results folder
-
-
-      - name: Debug Test Results File
-        if: always()
-        run: |
-          echo "Checking if file exists in test-results/:"
-          ls -l ${{ github.workspace }}/test-results/ || echo "⚠️ No test results found!"
-
+          name: test-results
+          path: test-results/*.csv
 
   summary-report:
     needs: run-tests
     runs-on: ubuntu-latest
-    if: always()  # Run even if some tests fail
+    if: always()
     steps:
       - name: Download All Test Results
         uses: actions/download-artifact@v4
         with:
-          path: test-results  # Downloads all artifacts here
-
-      - name: Move Test Results from Folders
-        run: |
-          echo "🔹 Moving test result files out of artifact folders."
-          
-          # Debugging: Show current directory structure
-          ls -R test-results/
-          
-          # Find and move CSV files out of their folders
-          find test-results/ -mindepth 2 -type f -name "*.csv" -exec mv {} test-results/ \;
-          
-          echo "🔍 Final test-results directory after moving files:"
-          ls -l test-results/
+          name: test-results
+          path: test-results
 
       - name: Merge Test Results
         run: |
-          echo "🔹 Merging all test results into a single summary."
-          
-          # Define summary file
-          SUMMARY_FILE="$GITHUB_STEP_SUMMARY"
-          FINAL_RESULTS="final-results.csv"
-          FORMATTED_RESULTS="formatted-results.md"
-          
-          # Create CSV header
-          echo "Runner,Test Name,Result" > "$FINAL_RESULTS"
-          
-          echo "🔍 Checking for test result files in test-results/ directory:"
-          ls -l test-results/
-          
-          # Loop through all CSV files directly in `test-results/`
+          echo "Runner,Test Name,Result" > final-results.csv
           for file in test-results/*.csv; do
             if [[ -f "$file" ]]; then
-              echo "✅ Processing: $file"
-              cat "$file" >> "$FINAL_RESULTS"
+              cat "$file" >> final-results.csv
             fi
           done
-          
-          # Debugging output: Print final CSV file
-          echo "🔍 Final CSV Output:"
-          cat "$FINAL_RESULTS"
+          echo "Merged CSV:" && cat final-results.csv
 
-
-      - name: Output Test Summary
+      - name: Generate Markdown Summary
         run: |
-          echo "🔹 Processing test results for GitHub Actions summary."
-          
-          # Define files
-          FINAL_RESULTS="final-results.csv"
-          FORMATTED_RESULTS="formatted-results.md"
-          
-          # Create Markdown table header
-          echo "| Runner | Test Name | Result |" > "$FORMATTED_RESULTS"
-          echo "|--------|-----------|--------|" >> "$FORMATTED_RESULTS"
-          
-          # Read and convert CSV to Markdown table
-          tail -n +2 "$FINAL_RESULTS" | while IFS=, read -r runner test result; do
-            echo "| $runner | $test | $result |" >> "$FORMATTED_RESULTS"
+          echo "| Runner | Test Name | Result |" > formatted-results.md
+          echo "|--------|-----------|--------|" >> formatted-results.md
+          tail -n +2 final-results.csv | while IFS=, read -r runner test result; do
+            echo "| $runner | $test | $result |" >> formatted-results.md
           done
-          
-          # Debugging output: Print formatted Markdown table
-          echo "🔍 Final Markdown Output:"
-          cat "$FORMATTED_RESULTS"
-          
-          # Count test results
-          TOTAL_TESTS=$(wc -l < "$FINAL_RESULTS" | awk '{print $1-1}')  # Ignore header
-          PASSED=$(grep -c ',success' "$FINAL_RESULTS" || echo 0)
-          FAILED=$(grep -c ',failure' "$FINAL_RESULTS" || echo 0)
-          
-          # Append summary to GitHub Actions Summary
+          cat formatted-results.md
+  
+          TOTAL=$(($(wc -l < final-results.csv) - 1))
+          PASSED=$(grep -c ',success' final-results.csv || echo 0)
+          FAILED=$(grep -c ',failure' final-results.csv || echo 0)
+  
+          echo "## Test Results Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Total Tests:** $TOTAL" >> "$GITHUB_STEP_SUMMARY"
+          echo "- ✅ **Passed:** $PASSED" >> "$GITHUB_STEP_SUMMARY"
+          echo "- ❌ **Failed:** $FAILED" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Total Tests:** $TOTAL_TESTS" >> "$GITHUB_STEP_SUMMARY"
-          echo "**✅ Passed:** $PASSED" >> "$GITHUB_STEP_SUMMARY"
-          echo "**❌ Failed:** $FAILED" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          cat "$FORMATTED_RESULTS" >> "$GITHUB_STEP_SUMMARY"
+          cat formatted-results.md >> "$GITHUB_STEP_SUMMARY"
 
   cleanup-runner:
     needs: summary-report

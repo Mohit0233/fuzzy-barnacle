@@ -280,34 +280,64 @@ jobs:
 
       - name: Merge Test Results
         run: |
+          echo "🔹 Merging all test results into a single summary."
+          
+          # Define summary file
           SUMMARY_FILE="$GITHUB_STEP_SUMMARY"
-  
-          echo "| Runner | Test Name | Result |" > final-results.csv
-          echo "|--------|-----------|--------|" >> final-results.csv
-  
+          FINAL_RESULTS="final-results.csv"
+          FORMATTED_RESULTS="formatted-results.md"
+          
+          # Create header for the CSV
+          echo "Runner,Test Name,Result" > "$FINAL_RESULTS"
+          
+          # Loop through all result files
           for file in test-results/test-results-*.csv; do
             if [[ -f "$file" ]]; then
               runner=$(basename "$file" | cut -d'-' -f3)
               test=$(basename "$file" | cut -d'-' -f4 | sed 's/.csv//')
               result=$(cat "$file")
-              echo "| $runner | $test | $result |" >> final-results.csv
+              echo "$runner,$test,$result" >> "$FINAL_RESULTS"
             fi
           done
-  
-          cat final-results.csv  # Debugging to check merged results
+          
+          # Debugging output: Print final CSV file
+          echo "🔍 Final CSV Output:"
+          cat "$FINAL_RESULTS"
 
       - name: Output Test Summary
         run: |
-          TOTAL_TESTS=$(wc -l < final-results.csv | awk '{print $1-2}')  # Ignore header
-          PASSED=$(grep -c ',success' final-results.csv || echo 0)
-          FAILED=$(grep -c ',failure' final-results.csv || echo 0)
-  
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Total Tests:** $TOTAL_TESTS" >> $GITHUB_STEP_SUMMARY
-          echo "**✅ Passed:** $PASSED" >> $GITHUB_STEP_SUMMARY
-          echo "**❌ Failed:** $FAILED" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          cat final-results.csv >> $GITHUB_STEP_SUMMARY
+          echo "🔹 Processing test results for GitHub Actions summary."
+          
+          # Define files
+          FINAL_RESULTS="final-results.csv"
+          FORMATTED_RESULTS="formatted-results.md"
+          
+          # Create Markdown table header
+          echo "| Runner | Test Name | Result |" > "$FORMATTED_RESULTS"
+          echo "|--------|-----------|--------|" >> "$FORMATTED_RESULTS"
+          
+          # Read and convert CSV to Markdown table
+          tail -n +2 "$FINAL_RESULTS" | while IFS=, read -r runner test result; do
+            echo "| $runner | $test | $result |" >> "$FORMATTED_RESULTS"
+          done
+          
+          # Debugging output: Print formatted Markdown table
+          echo "🔍 Final Markdown Output:"
+          cat "$FORMATTED_RESULTS"
+          
+          # Count test results
+          TOTAL_TESTS=$(wc -l < "$FINAL_RESULTS" | awk '{print $1-1}')  # Ignore header
+          PASSED=$(grep -c ',success' "$FINAL_RESULTS" || echo 0)
+          FAILED=$(grep -c ',failure' "$FINAL_RESULTS" || echo 0)
+          
+          # Append summary to GitHub Actions Summary
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Total Tests:** $TOTAL_TESTS" >> "$GITHUB_STEP_SUMMARY"
+          echo "**✅ Passed:** $PASSED" >> "$GITHUB_STEP_SUMMARY"
+          echo "**❌ Failed:** $FAILED" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          cat "$FORMATTED_RESULTS" >> "$GITHUB_STEP_SUMMARY"
+    
 
 
   cleanup-runner:

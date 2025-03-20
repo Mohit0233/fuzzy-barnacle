@@ -255,8 +255,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.test-name }}  # Unique name for each artifact
-          path: ${{ github.workspace }}/test-results-${{ matrix.test-name }}.csv
+          name: test-results-${{ matrix.runner_label }}-${{ matrix.test-name }}  # Unique name per test & runner
+          path: ${{ github.workspace }}/test-results-${{ matrix.runner_label }}-${{ matrix.test-name }}.csv
 
 
   summary-report:
@@ -272,16 +272,19 @@ jobs:
       - name: Merge Test Results
         run: |
           SUMMARY_FILE="$GITHUB_STEP_SUMMARY"
-
-          echo "| Test Name | Result |" > final-results.csv
-          echo "|-----------|--------|" >> final-results.csv
-          
+  
+          echo "| Runner | Test Name | Result |" > final-results.csv
+          echo "|--------|-----------|--------|" >> final-results.csv
+  
           for file in test-results/test-results-*.csv; do
             if [[ -f "$file" ]]; then
-              cat "$file" >> final-results.csv
+              runner=$(basename "$file" | cut -d'-' -f3)
+              test=$(basename "$file" | cut -d'-' -f4 | sed 's/.csv//')
+              result=$(cat "$file")
+              echo "| $runner | $test | $result |" >> final-results.csv
             fi
           done
-          
+  
           cat final-results.csv  # Debugging to check merged results
 
       - name: Output Test Summary
@@ -289,7 +292,7 @@ jobs:
           TOTAL_TESTS=$(wc -l < final-results.csv | awk '{print $1-2}')  # Ignore header
           PASSED=$(grep -c ',success' final-results.csv || echo 0)
           FAILED=$(grep -c ',failure' final-results.csv || echo 0)
-          
+  
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Total Tests:** $TOTAL_TESTS" >> $GITHUB_STEP_SUMMARY
           echo "**✅ Passed:** $PASSED" >> $GITHUB_STEP_SUMMARY

@@ -16,7 +16,15 @@ env:
   INSTANCE_TYPES: '[\"t4g.small\", \"t4g.medium\"]'
 
 jobs:
+
+  prerequisite-infra-setup:
+    runs-on: aws-runner-t4g.large
+    steps:
+      - name: Mock
+        run: echo "Mocking the infrastructure setup"
+        
   create-runners:
+    depends-on: prerequisite-infra-setup
     runs-on: aws-runner-t4g.large
     outputs:
       runner_names: ${{ steps.terraform-outputs.outputs.runner_names }}

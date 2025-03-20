@@ -22,9 +22,9 @@ jobs:
     steps:
       - name: Mock
         run: echo "Mocking the infrastructure setup"
-        
+
   create-runners:
-    depends-on: prerequisite-infra-setup
+    needs: prerequisite-infra-setup
     runs-on: aws-runner-t4g.large
     outputs:
       runner_names: ${{ steps.terraform-outputs.outputs.runner_names }}

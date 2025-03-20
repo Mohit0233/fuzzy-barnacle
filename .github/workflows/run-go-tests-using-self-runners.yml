@@ -89,7 +89,9 @@ jobs:
         id: terraform-outputs
         run: |
           cd terraform
-          terraform init
+          terraform init -upgrade
+          terraform providers
+          terraform state list
           terraform apply -auto-approve 
           #          
           #            -var="aws_region=${{ env.AWS_REGION }}" \

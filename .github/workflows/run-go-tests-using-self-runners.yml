@@ -90,8 +90,8 @@ jobs:
         run: |
           cd terraform
           terraform init -upgrade
-          terraform providers
-          terraform state list
+          terraform providers || true
+          terraform state list || true
           terraform apply -auto-approve 
           #          
           #            -var="aws_region=${{ env.AWS_REGION }}" \

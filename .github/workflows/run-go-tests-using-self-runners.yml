@@ -249,14 +249,23 @@ jobs:
           if [ "${{ env.exit_code }}" -ne 0 ]; then
             RESULT="failure"
           fi
-          echo "${{ matrix.test-name }},${RESULT}" >> $GITHUB_WORKSPACE/test-results-${{ matrix.test-name }}.csv
-    
+          FILE_PATH="${{ github.workspace }}/test-results-${{ matrix.runner_label }}-${{ matrix.test-name }}.csv"
+          echo "Saving results to: $FILE_PATH"
+          echo "${{ matrix.test-name }},${RESULT}" > "$FILE_PATH"  # Use `>` instead of `>>` to create a new file
+          ls -l "$FILE_PATH"  # Debugging step to verify file creation
+
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.runner_label }}-${{ matrix.test-name }}  # Unique name per test & runner
           path: ${{ github.workspace }}/test-results-${{ matrix.runner_label }}-${{ matrix.test-name }}.csv
+
+      - name: Debug Test Results File
+        if: always()
+        run: |
+          echo "Checking if file exists:"
+          ls -l ${{ github.workspace }}/test-results-${{ matrix.runner_label }}-${{ matrix.test-name }}.csv || echo "File not found!"
 
 
   summary-report:
